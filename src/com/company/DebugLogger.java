@@ -8,9 +8,9 @@ import java.util.List;
 /**
  * Created by David Schweizer on 29-12-2016.
  */
-public class DebugLogger {
+public class DebugLogger  {
     private BufferedWriter debugLog;
-    private static boolean __debug = true;
+    private static boolean __debug = false;
     private static DebugLogger instance;
 
     private DebugLogger() throws IOException {

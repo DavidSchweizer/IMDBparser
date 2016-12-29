@@ -6,7 +6,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException //throws IOException
     {
-        //new ParserEngine("movies.list.cfg").process();
-        new ParserEngine("actors.list.cfg").process("s_act2.txt");
+        new ParserEngine("movies.list.cfg").process();
+        //new ParserEngine("actors.list.cfg").process("act0.list");
     }
 }
