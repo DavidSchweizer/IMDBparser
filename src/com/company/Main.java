@@ -11,10 +11,7 @@ public class Main {
 
     public static void main(String[] args) throws IOException //throws IOException
     {
-	// write your code here
-//        ParserEngine patty = new ParserEngine("actors.list.cfg");
-//        patty.process();
-       ParserEngine patty = new ParserEngine("actors.list.cfg");
-       patty.process("smallact.txt");
+        //new ParserEngine("movies.list.cfg").process();
+        new ParserEngine("actors.list.cfg").process("s_act2.txt");
     }
 }

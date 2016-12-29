@@ -6,8 +6,11 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang3.time.StopWatch;
 
@@ -24,7 +27,7 @@ public class ParserEngine {
     private BufferedWriter errorLog;
     private CSVWriter writer;
     private BufferedWriter debugLog;
-    private boolean __debug = false;
+    private boolean __debug = true;
     private boolean __skip = true; // to skip special lines such as {{SUSPENDED}}
     private boolean __skipRest = false; // to accept all lines, use only during building config file
 
@@ -39,11 +42,30 @@ public class ParserEngine {
         debugLog = new BufferedWriter(new FileWriter("debug.log"));
     }
 
-    public ParserEngine(String configName) throws IOException {
-        this();
+    private String substituteQuotes(Map<String, String> elements, String s)
+    {
+        Pattern p = Pattern.compile("\\<[A-Z][A-Z0-9]*\\>");
+        String result = s;
+        int changes = -1;
+        while (changes != 0) // note: elements may be nested
+        {
+            changes = 0;
+            Matcher m = p.matcher(result);
+            while (m.find())
+            {
+                if (elements.get(m.group()) != null)
+                {
+                    result = result.replace(m.group(), elements.get(m.group()));
+                    changes++;
+                }
+            }
+        }
+        return result;
+    }
+
+    private void readConfigFile(String configName, Map <String,String> elements) throws IOException {
 
         int curSequence = 0, curIndex = 0;
-
         BufferedReader configFile = new BufferedReader(new FileReader(configName));
         try {
             String s = configFile.readLine().trim();
@@ -55,6 +77,13 @@ public class ParserEngine {
                     switch (s.charAt(0)) {
                         case '#': // comment
                             break;
+                        case 'N': // iNclude a file
+                            readConfigFile(s.substring(2).trim(), elements);
+                            break;
+                        case 'E': // element
+                            String[] els = s.split(":");
+                            elements.put(els[0].substring(1), els[1]);
+                            break;
                         case 'F': // filename
                             this.fileName = s.substring(2).trim();
                             break;
@@ -65,10 +94,10 @@ public class ParserEngine {
                             curIndex = toInt(s.substring(2).trim(), curIndex);
                             break;
                         case 'P': // read new pattern
-                            newPattern = s.substring(2).trim();
+                            newPattern = substituteQuotes(elements, s.substring(2).trim());
                             break;
                         default:
-                            throw new IOException(String.format("Illegal input %s in configfile", s));
+                            throw new IOException(String.format("Illegal input %s in configfile %s", s, configName));
                     }
                 if (!newPattern.isEmpty())
                     this.addPattern(newPattern, curSequence, curIndex);
@@ -79,7 +108,17 @@ public class ParserEngine {
         }
     }
 
-    public void dump() {
+
+
+    public ParserEngine(String configName) throws IOException
+    {
+        this();
+        Map<String,String> elements = new HashMap<>();
+        readConfigFile(configName, elements);
+    }
+
+    public void dump()
+    {
         for (int i = 0; i < patterns.size(); i++)
             System.out.format("pattern %d: %s%n", i + 1, patterns.get(i).toString());
         System.out.format("groups: ");
@@ -141,12 +180,12 @@ public class ParserEngine {
         boolean result = false;
         int curSequence = -1;
         int curIndex = -1;
-
+        if (line.trim().isEmpty())
+            return false;
         Log("*** START PROCESS LINE ***%n%s%n", line);
         for (SequencedPattern p: patterns)
         {
             Matcher m = p.pattern.matcher(l);
-            Log("line: %s. Pattern (%d,%d): %s  cur: %d%n", l, p.sequence, p.index, m.pattern(), curSequence);
             if (curSequence != -1 && curSequence != p.sequence) // different sequence: skip
                 continue;
             else if (curSequence == -1)
@@ -154,8 +193,9 @@ public class ParserEngine {
                 if (p.index > 1) // can not use pattern before first of sequence!
                     continue;
             }
-            if (curIndex == p.index) // is set only if one found with this index
+            if (curSequence == p.sequence && curIndex == p.index) // is set only if one found with this sequence and index
                 continue;
+            Log("line:|%s| Pattern (%d,%d): %s  cur: %d%n", l, p.sequence, p.index, m.pattern(), curSequence);
             if (m.find() && m.start() == 0)
             {
                 if (curSequence == -1 && p.sequence > 0)
