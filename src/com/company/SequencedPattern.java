@@ -18,7 +18,6 @@ public class SequencedPattern implements Comparable<SequencedPattern>
 
     public Pattern pattern;
     public List<String> groups;
-    public List<Integer> columns; // used to speed up finding the proper column for output
     int sequence; // a file may xontain one or more sequences that may be distinguished in parsing, eg. movies and series
     int index;    // ordering within the sequence
 
@@ -31,9 +30,6 @@ public class SequencedPattern implements Comparable<SequencedPattern>
             if (!groups.contains(group))
                 groups.add(group);
         }
-        columns.clear();
-        for (int i = 0; i < groups.size(); i++)
-            columns.add(i); // note: columns will have to be set from ParserEngine
     }
 
     SequencedPattern(String patternString, int aIndex, int aSequence)
@@ -42,7 +38,6 @@ public class SequencedPattern implements Comparable<SequencedPattern>
         sequence = aIndex;
         index = aSequence;
         groups = new ArrayList<String>();
-        columns= new ArrayList<Integer>();
         addGroupNames(patternString);
     }
 
