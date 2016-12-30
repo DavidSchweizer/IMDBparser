@@ -10,16 +10,16 @@ import java.util.regex.Matcher;
  * Created by David Schweizer on 29-12-2016.
  */
 public class PatternSequence extends ArrayList<SequencedPattern> {
-    public List<Integer> columns; // used to speed up finding the proper column for output
-    public List<String> groups; // all groups in the sequence
+    private List<Integer> columns; // used to speed up finding the proper column for output
+    private List<String> groups; // all groups in the sequence
     public int sequence;
 
     public boolean needsEndOfLine = true;
     private boolean __skip;
 
     public PatternSequence(int aSequence) {
-        columns = new ArrayList<Integer>();
-        groups = new ArrayList<String>();
+        columns = new ArrayList<>();
+        groups = new ArrayList<>();
         sequence = aSequence;
     }
 
@@ -41,8 +41,8 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         // add names of groups in index->sequence order and get natural order of columns
         groups.clear();
         columns.clear();
-        List<Integer> sequences = new ArrayList<Integer>();
-        List<Integer> indices = new ArrayList<Integer>();
+        List<Integer> sequences = new ArrayList<>();
+        List<Integer> indices = new ArrayList<>();
         int index;
         for (SequencedPattern p: this)
         {
@@ -75,7 +75,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
     }
 
 
-    public String processMatch(SequencedPattern p, Matcher m, String l, String[]record)
+    private String processMatch(SequencedPattern p, Matcher m, String l, String[]record)
     {
         for (String match: p.groups)
         {
@@ -119,7 +119,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
                 l = processMatch(p, m, l, record);
                 first = true;
                 if (l.isEmpty()// whole line parsed
-                     ||
+                     &&
                      !p.isRepeatable)
                     break;
                 curIndex = p.index;
