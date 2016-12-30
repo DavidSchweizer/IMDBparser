@@ -102,7 +102,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         {
             try
             {
-                record[columns.get(groups.indexOf(p.groups.get(i)))] = m.group(p.groups.get(i));
+                record[columns.get(this.groups.indexOf( p.groups.get(i)))] = m.group( p.groups.get(i));
             }
             catch (IllegalArgumentException ignored) {
             }

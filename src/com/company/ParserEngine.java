@@ -155,8 +155,7 @@ public class ParserEngine {
     }
 */
 
-    private void getGroupNames()
-    {
+    private void getGroupNames() throws IMDBParserException {
         Integer indexInSequence[] = new Integer[sequences.size()];
         SequencedPattern pattern;
 
@@ -197,6 +196,9 @@ public class ParserEngine {
         columnIndex.clear();
         for(String name: columnNames)
             columnIndex.put(name, columnNames.indexOf(name));
+        // and insert in all sequences
+        for (PatternSequence sequence: sequences)
+            sequence.setColumns(columnIndex);
     }
 
     private void clearRecord()
@@ -224,14 +226,12 @@ public class ParserEngine {
         errorLog.close();
     }
 
-    public void process(String aFileName) throws IOException
-    {
+    public void process(String aFileName) throws IOException, IMDBParserException {
         this.fileName = aFileName;
         process();
      }
 
-    public void process() throws IOException
-    {
+    public void process() throws IOException, IMDBParserException {
         int nLines = 0;
         String fileNameCSV = String.format("%s.csv",  this.fileName);
         StopWatch sw = new StopWatch();
