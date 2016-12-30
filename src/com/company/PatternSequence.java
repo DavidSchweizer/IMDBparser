@@ -12,8 +12,9 @@ import java.util.regex.Pattern;
  */
 public class PatternSequence extends ArrayList<SequencedPattern> {
     public List<Integer> columns; // used to speed up finding the proper column for output
-    public List<String> groups;
+    public List<String> groups; // all groups in the sequence
     public int sequence;
+
     public boolean needsEndOfLine = true;
     private boolean __skip;
 
@@ -75,7 +76,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         return groups.size();
     }
 
-    public String processMatch(SequencedPattern p, Matcher m, String l, String[]record, Map<String,Integer> columns)
+    public String processMatch(SequencedPattern p, Matcher m, String l, String[]record)
     {
 /*
         String value = "";
@@ -97,11 +98,11 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
             }
         }
         */
-        for (int i  = 0; i < groups.size(); i++)
+        for (int i  = 0; i < p.groups.size(); i++)
         {
             try
             {
-                record[columns.get(groups.get(i))] = m.group(groups.get(i));
+                record[columns.get(groups.indexOf(p.groups.get(i)))] = m.group(p.groups.get(i));
             }
             catch (IllegalArgumentException ignored) {
             }
@@ -109,7 +110,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         return l.substring(m.end()).trim();
     }
 
-    public String processLine(String line, String[]record, Map<String,Integer> columns) throws IOException
+    public String processLine(String line, String[]record) throws IOException
     {
         String l = line;
         boolean result = false;
@@ -127,7 +128,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
             if (m.find() && m.start() == 0)
             {
                 DebugLogger.Log("found %d  %d  %s%n", m.start(), m.end(), m.group());
-                l = processMatch(p, m, l, record, columns);
+                l = processMatch(p, m, l, record);
                 first = true;
                 if (l.isEmpty()) // whole line parsed
                     break;

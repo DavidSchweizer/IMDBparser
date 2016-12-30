@@ -254,7 +254,7 @@ public class ParserEngine {
                     sequence = sequences.get(sequenceIndex);
                     while (!s.isEmpty() && sequence != null)
                     {
-                        s = sequence.processLine(s, currentRecord, columnIndex);
+                        s = sequence.processLine(s, currentRecord);
                         if (s.isEmpty()) {
                             Log("writing%n");
                             writer.writeNext(currentRecord);
