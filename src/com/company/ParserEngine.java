@@ -69,23 +69,26 @@ public class ParserEngine {
         return result;
     }
 
-    void addPattern(String newPattern, int curSequence, int curIndex)
+    SequencedPattern addPattern(String newPattern, int curSequence, int curIndex)
     {
         // add all sequences up to and including this one, if not yet done
         for (int i = sequences.get(sequences.size()-1).sequence+1; sequences.size() <= curSequence; i++)
            sequences.add(new PatternSequence(i));
-        sequences.get(curSequence).addPattern(newPattern, curIndex);
+        return sequences.get(curSequence).addPattern(newPattern, curIndex);
     }
 
     private void readConfigFile(String configName, Map <String,String> elements) throws IOException {
 
         int curSequence = 0, curIndex = 0;
+        boolean isRepeatable;
+        SequencedPattern pattern;
         BufferedReader configFile = new BufferedReader(new FileReader(configName));
         try {
             String s = configFile.readLine().trim();
             String newPattern;
             while (s != null) {
                 s = s.trim();
+                isRepeatable = false;
                 newPattern = "";
                 if (!s.isEmpty())
                     switch (s.charAt(0)) {
@@ -110,11 +113,19 @@ public class ParserEngine {
                         case 'P': // read new pattern
                             newPattern = substituteQuotes(elements, s.substring(2).trim());
                             break;
+                        case 'R': // new repeatable pattern
+                            newPattern = substituteQuotes(elements, s.substring(2).trim());
+                            isRepeatable = true;
+                            break;
                         default:
                             throw new IOException(String.format("Illegal input %s in configfile %s", s, configName));
                     }
                 if (!newPattern.isEmpty())
-                    addPattern(newPattern, curSequence, curIndex);
+                {
+                    pattern = addPattern(newPattern, curSequence, curIndex);
+                    if (isRepeatable)
+                        pattern.isRepeatable = true;
+                }
                 s = configFile.readLine();
             }
         } finally {
@@ -231,49 +242,71 @@ public class ParserEngine {
         process();
      }
 
+    static final int ESTIMATELINES = 20000;
     public void process() throws IOException, IMDBParserException {
         int nLines = 0;
         String fileNameCSV = String.format("%s.csv",  this.fileName);
         StopWatch sw = new StopWatch();
         PatternSequence sequence;
         int sequenceIndex = 0;
+        long fileSize = -1;
+        boolean written;
 
         getGroupNames();
+
+        // get file size estimate
+        File temp = new File(fileName);
+        fileSize = temp.length();
+
         try
         {
             initCSVfile(fileNameCSV);
             try (BufferedReader reader = new BufferedReader(new FileReader(fileName)))
             {
+                int SumLengthFirstLines = 0; // sums the first 1000 lines to estimate how long it will take
+                float estimateTotalLines = -1;
                 clearRecord();
                 sw.start();
-
-                String s = reader.readLine();
-                while (s != null)
-                {
+                String s = reader.readLine(), s2;
+                while (s != null) {
+                    if (nLines < ESTIMATELINES)
+                        SumLengthFirstLines += s.length();
+                    else if (nLines == ESTIMATELINES) {
+                        estimateTotalLines = fileSize / (SumLengthFirstLines / ESTIMATELINES);
+                    }
                     DebugLogger.Log("*** START PROCESS LINE *** %s %n", s);
                     sequence = sequences.get(sequenceIndex);
-                    while (!s.isEmpty() && sequence != null)
+                    s2 = s;
+                    written = false;
+                    while (!s2.isEmpty() && sequence != null)
                     {
-                        s = sequence.processLine(s, currentRecord);
-                        if (s.isEmpty()) {
+                        s2 = sequence.processLine(s2, currentRecord);
+                        if (s2.isEmpty() && sequence.recordedMatch())
+                        {
                             Log("writing%n");
                             writer.writeNext(currentRecord);
+                            written = true;
                         } else if (++sequenceIndex < sequences.size())
                             sequence = sequences.get(sequenceIndex);
                         else
                             sequence = null;
                     }
-                    DebugLogger.Log("*** END PROCESS LINE *** !! %b !! ***%n", s.isEmpty());
-                    if (!s.isEmpty())
-                    {
+                    DebugLogger.Log("*** END PROCESS LINE *** !! %b !! ***%n", s2.isEmpty());
+                    if (!s2.isEmpty() ||!written) {
                         errorLog.write(s);
                         errorLog.newLine();
                     }
                     s = reader.readLine();
                     sequenceIndex = 0;
                     clearRecord();
-                    if (nLines%FEEDBACK2 == 0)
-                        System.out.format("%n%d%n", nLines);
+                    if (nLines % FEEDBACK2 == 0)
+                    {
+                        if (estimateTotalLines > 0)
+                            System.out.format("%n%d (%2.1f %%)%n", nLines, 100.0 * nLines / estimateTotalLines);
+                        else
+                            System.out.format("%n%d%n", nLines);
+                    }
+
                     if (nLines++ % FEEDBACK == 0)
                         System.out.print(".");
                 }

@@ -5,7 +5,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Created by David Schweizer on 29-12-2016.
@@ -18,20 +17,24 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
     public boolean needsEndOfLine = true;
     private boolean __skip;
 
-    public PatternSequence(int aSequence)
-    {
+    public PatternSequence(int aSequence) {
         columns = new ArrayList<Integer>();
         groups = new ArrayList<String>();
         sequence = aSequence;
     }
 
-    public void addPattern(String patternString, int index)
-    {
-        add(new SequencedPattern(patternString, sequence, index));
+    public SequencedPattern addPattern(String patternString, int index) {
+        SequencedPattern result = new SequencedPattern(patternString, sequence, index);
+        add(result);
         this.sort(SequencedPattern::compareTo);
         addGroupNames();
+        return result;
     }
 
+    public boolean recordedMatch()
+    {
+        return !__skip;
+    }
 
     private void addGroupNames()
     {
@@ -71,43 +74,24 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         }
     }
 
-    public int groupCount()
-    {
-        return groups.size();
-    }
 
     public String processMatch(SequencedPattern p, Matcher m, String l, String[]record)
     {
-/*
-        String value = "";
-        String column = "";
-        for (int i  = 0; i < groups.size(); i++)
+        for (String match: p.groups)
         {
             try
             {
-                column = groups.get(i);
-                value = m.group(column);
+                int i = columns.get(this.groups.indexOf(match));
+                if (!p.isRepeatable || record[i].isEmpty())
+                    record[i] = m.group(match);
+                else
+                    record[i] = String.format("%s,%s", record[i], m.group(match));
+                __skip = false; // if we get here, there was an actual match recorded
             }
-            catch (IllegalArgumentException ignored) {
-                value = null;
-            }
-            if (value != null)
-            {
-                record[columns.get(column)] = value;
-                __skip = false;
-            }
-        }
-        */
-        for (int i  = 0; i < p.groups.size(); i++)
-        {
-            try
-            {
-                record[columns.get(this.groups.indexOf( p.groups.get(i)))] = m.group( p.groups.get(i));
-            }
-            catch (IllegalArgumentException ignored) {
+            catch (IllegalArgumentException ignored) { // not all groups in pattern may be present in the string
             }
         }// remove matched part from string and extra whitespaces and return
-        return l.substring(m.end()).trim();
+        return l.substring(m.end() - m.start()).trim();
     }
 
     public String processLine(String line, String[]record) throws IOException
@@ -120,20 +104,30 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         if (line.trim().isEmpty())
             return "";
         __skip = true; // set to false if changes made
-        DebugLogger.Log("* start sequence *%d%n", sequence);
+        DebugLogger.Log("* start sequence %d *%n", sequence);
         for (SequencedPattern p: this)
         {
+            if (p.index == curIndex) // already one found with same index
+                continue;
+            curIndex = -1;
             Matcher m = p.pattern.matcher(l);
             DebugLogger.Log("line:|%s| Pattern (%d): %s%n", l, p.index, m.pattern());
-            if (m.find() && m.start() == 0)
+            int start = 0;
+            while (m.find() && m.start() == start)
             {
                 DebugLogger.Log("found %d  %d  %s%n", m.start(), m.end(), m.group());
                 l = processMatch(p, m, l, record);
                 first = true;
-                if (l.isEmpty()) // whole line parsed
+                if (l.isEmpty()// whole line parsed
+                     ||
+                     !p.isRepeatable)
                     break;
+                curIndex = p.index;
+                if (p.isRepeatable)
+                    start = m.end();
             }
-            else if (p.index > 1 && !first) // needs to have first index
+            if ((p.index > 1 && !first) // needs to have first index
+                || l.isEmpty())
                 break;
         }
         DebugLogger.Log("* end sequence %d *%n", sequence);

@@ -20,6 +20,7 @@ public class SequencedPattern implements Comparable<SequencedPattern>
     public List<String> groups;
     int sequence; // a file may xontain one or more sequences that may be distinguished in parsing, eg. movies and series
     int index;    // ordering within the sequence
+    public boolean isRepeatable; // may be more than one
 
     private void addGroupNames(String patternString)
     {
@@ -37,6 +38,7 @@ public class SequencedPattern implements Comparable<SequencedPattern>
         pattern = Pattern.compile(patternString);
         sequence = aIndex;
         index = aSequence;
+        isRepeatable = false;
         groups = new ArrayList<String>();
         addGroupNames(patternString);
     }
