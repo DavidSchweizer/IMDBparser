@@ -244,7 +244,7 @@ public class ParserEngine {
 
     static final int ESTIMATELINES = 20000;
     public void process() throws IOException, IMDBParserException {
-        int nLines = 0;
+        int nLines = 0, nWritten = 0, nError = 0;
         String fileNameCSV = String.format("%s.csv",  this.fileName);
         StopWatch sw = new StopWatch();
         PatternSequence sequence;
@@ -286,6 +286,7 @@ public class ParserEngine {
                             Log("writing%n");
                             writer.writeNext(currentRecord);
                             written = true;
+                            nWritten++;
                         } else if (++sequenceIndex < sequences.size())
                             sequence = sequences.get(sequenceIndex);
                         else
@@ -295,6 +296,7 @@ public class ParserEngine {
                     if (!s2.isEmpty() ||!written) {
                         errorLog.write(s);
                         errorLog.newLine();
+                        nError++;
                     }
                     s = reader.readLine();
                     sequenceIndex = 0;
@@ -311,7 +313,7 @@ public class ParserEngine {
                         System.out.print(".");
                 }
                 sw.stop();
-                System.out.format("%nReady after %s. %d lines processed.%n", sw.toString(),  nLines);
+                System.out.format("%nReady after %s. %d lines processed. Successfully written: %d lines. Errors: %d lines.%n", sw.toString(),  nLines, nWritten, nError);
             }
         }
         finally
