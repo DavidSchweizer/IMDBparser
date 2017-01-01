@@ -8,7 +8,7 @@ public class Main {
     {
         try {
             //new ParserEngine("movies.list.cfg").process();
-            new ParserEngine("countries.list.cfg").process("");
+            new ParserEngine("locations.list.cfg").process();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (IMDBParserException e) {

@@ -13,6 +13,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
     private List<Integer> columns; // used to speed up finding the proper column for output
     private List<String> groups; // all groups in the sequence
     public int sequence;
+    public String sequenceName;
 
     public boolean needsEndOfLine = true;
     private boolean __skip;
@@ -21,6 +22,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         columns = new ArrayList<>();
         groups = new ArrayList<>();
         sequence = aSequence;
+        sequenceName = "";
     }
 
     public SequencedPattern addPattern(String patternString, int index) {
@@ -82,10 +84,12 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
             try
             {
                 int i = columns.get(this.groups.indexOf(match));
-                if (!p.isRepeatable || record[i].isEmpty())
+                if (!p.isRepeatable || record[i] == null || record[i].isEmpty())
                     record[i] = m.group(match);
                 else
+                {
                     record[i] = String.format("%s,%s", record[i], m.group(match));
+                }
                 __skip = false; // if we get here, there was an actual match recorded
             }
             catch (IllegalArgumentException ignored) { // not all groups in pattern may be present in the string
@@ -104,7 +108,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         if (line.trim().isEmpty())
             return "";
         __skip = true; // set to false if changes made
-        DebugLogger.Log("* start sequence %d *%n", sequence);
+        DebugLogger.Log("* start sequence %d (%s) *%n", sequence, sequenceName);
         for (SequencedPattern p: this)
         {
             if (p.index == curIndex) // already one found with same index
@@ -130,7 +134,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
                 || l.isEmpty())
                 break;
         }
-        DebugLogger.Log("* end sequence %d *%n", sequence);
+        DebugLogger.Log("* end sequence %d (%s) *%n", sequence, sequenceName);
         return l;
     }
 

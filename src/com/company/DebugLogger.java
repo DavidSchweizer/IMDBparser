@@ -1,8 +1,6 @@
 package com.company;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -14,7 +12,7 @@ public class DebugLogger  {
     private static DebugLogger instance;
 
     private DebugLogger() throws IOException {
-        debugLog = new BufferedWriter(new FileWriter("debug.log"));
+        debugLog = new BufferedWriter(new OutputStreamWriter(new FileOutputStream("debug.log"), "Windows-1252"));
     }
 
     public static void Log(String format, Object... params) throws IOException {
