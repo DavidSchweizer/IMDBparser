@@ -23,6 +23,8 @@ import static org.apache.commons.lang3.math.NumberUtils.toInt;
  */
 public class ParserEngine {
 
+    public static String DATADIR = "./data";
+    public static String CFGDIR = "./cfg";
     private static final int FEEDBACK = 10000, FEEDBACK2 = 500000;
     private List<PatternSequence> sequences;
 
@@ -35,7 +37,7 @@ public class ParserEngine {
 
     private int curSequence = -1; // the sequence currently being parsed
 
-    public String fileName;
+    private String fileName;
 
     public ParserEngine() throws IOException {
         sequences = new ArrayList<>();
@@ -83,7 +85,7 @@ public class ParserEngine {
         int curSequence = 0, curIndex = 0;
         boolean isRepeatable;
         SequencedPattern pattern;
-        BufferedReader configFile = new BufferedReader(new FileReader(configName));
+        BufferedReader configFile = new BufferedReader(new FileReader(format("%s/%s", CFGDIR, configName)));
         try {
             String s = configFile.readLine().trim();
             String newPattern;
@@ -105,7 +107,7 @@ public class ParserEngine {
                             elements.put(els[0].substring(1), els[1]);
                             break;
                         case 'F': // filename
-                            this.fileName = s.substring(2).trim();
+                            this.fileName = String.format("data/%s", s.substring(2).trim());
                             break;
                         case 'S': // read new sequence
                             String[] s2 = s.split(":");
@@ -173,7 +175,7 @@ public class ParserEngine {
                     minI = sequences.get(iMinSeq).get(indexInSequence[iMinSeq]).index;
                 }
             }
-            if (iMinSeq >= sequences.size() || minI >= sequences.get(iMinSeq).size())
+            if (iMinSeq >= sequences.size() || minI > sequences.get(iMinSeq).getMaxIndex())
                 ready = true;
             else {   // add the groups if not yet inserted
                 pattern = sequences.get(iMinSeq).get(indexInSequence[iMinSeq]);
@@ -215,8 +217,15 @@ public class ParserEngine {
         errorLog.close();
     }
 
+    public String getFileName() { return fileName;}
+
+    public void setFileName(String value)
+    {
+        this.fileName = String.format("%s/%s", DATADIR, value.trim());
+    }
     public void process(String aFileName) throws IOException, IMDBParserException {
-        this.fileName = aFileName.trim();
+
+        setFileName(aFileName);
         process();
     }
 
@@ -231,7 +240,7 @@ public class ParserEngine {
     private static final int ESTIMATELINES = 20000;
     public void process() throws IOException, IMDBParserException {
         int nLines = 0, nWritten = 0, nError = 0;
-        String fileNameCSV = format("%s.csv",  this.fileName);
+        String fileNameCSV = format("%s.csv",  getFileName());
         StopWatch sw = new StopWatch();
         PatternSequence sequence;
         int sequenceIndex = 0;
@@ -241,15 +250,16 @@ public class ParserEngine {
         getGroupNames();
 
         // get file size estimate
-        File temp = new File(fileName);
+        File temp = new File(getFileName());
         fileSize = temp.length();
 
         try
         {
             initCSVfile(fileNameCSV);
 
-            DebugLogger.Log("IMDBparser  START PROCESSING %n\tInput file \t%s%n\tOutput file \t%s%n---------------------------------%n", fileName, fileNameCSV);
-            try (InputStreamReader input = new InputStreamReader(new FileInputStream(fileName), "Windows-1252");
+            DebugLogger.Log("IMDBparser  START PROCESSING %n\tInput file \t%s%n\tOutput file \t%s%n---------------------------------%n", getFileName(), fileNameCSV);
+            System.out.format("Start processing file %s%n", getFileName());
+            try (InputStreamReader input = new InputStreamReader(new FileInputStream(getFileName()), "Windows-1252");
                     BufferedReader reader = new BufferedReader(input))
             {
                 int SumLengthFirstLines = 0; // sums the first 1000 lines to estimate how long it will take

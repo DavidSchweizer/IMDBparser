@@ -25,6 +25,14 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
         sequenceName = "";
     }
 
+    public int getMaxIndex()
+    {
+        int result = -1;
+        for (SequencedPattern p:this)
+            if (p.index > result)
+                result = p.index;
+        return result;
+    }
     public SequencedPattern addPattern(String patternString, int index) {
         SequencedPattern result = new SequencedPattern(patternString, sequence, index);
         add(result);
@@ -72,7 +80,7 @@ public class PatternSequence extends ArrayList<SequencedPattern> {
             if (mapping.containsKey(group))
                columns.set(groups.indexOf(group), mapping.get(group));
             else
-                throw new IMDBParserException("invalid call to SetColumns");
+                throw new IMDBParserException(String.format("invalid call to SetColumns %s", group));
         }
     }
 

@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class DebugLogger  {
     private BufferedWriter debugLog;
-    private static boolean __debug = false;
+    private static boolean __debug = true;
     private static DebugLogger instance;
 
     private DebugLogger() throws IOException {
